@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Sản Phẩm</title>
+    <link rel="icon" href="data:,">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* CSS tùy chỉnh */
+        /* Code mới */
+        .product-img {
+            width: 50px;
+            height: 50px;
+            /* Thêm min-width và min-height để "ép" cứng kích thước */
+            min-width: 50px;
+            min-height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+            /* Thêm màu nền xám nhạt để tạo ra cái "khung" rõ ràng */
+            background-color: #f0f2f5; 
+            /* Đảm bảo nó là một khối */
+            display: block; 
+        }
+        tr.product-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        /* Hiệu ứng khi hover vào dòng sẽ hiện tooltip mặc định của trình duyệt nhờ thuộc tính title */
+        tr.product-row:hover {
+            background-color: #f1f1f1;
+        }
+        .sort-icon {
+            font-size: 0.8em;
+            margin-left: 5px;
+            color: #999;
+            cursor: pointer;
+        }
+        .sort-icon.active {
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <h2 class="mb-4 text-center">Quản Lý Sản Phẩm</h2>
+
+    <div class="card p-3 mb-4 shadow-sm">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm theo Title...">
+            </div>
+            <div class="col-md-2">
+                <select id="pageSizeSelect" class="form-select">
+                    <option value="5">Hiển thị 5</option>
+                    <option value="10">Hiển thị 10</option>
+                    <option value="20">Hiển thị 20</option>
+                </select>
+            </div>
+            <div class="col-md-6 text-end">
+                <button id="btnExport" class="btn btn-success me-2"><i class="fas fa-file-csv"></i> Export CSV</button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal"><i class="fas fa-plus"></i> Tạo Mới</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Image</th>
+                        <th scope="col">
+                            Title 
+                            <i class="fas fa-sort sort-icon" onclick="handleSort('title')"></i>
+                        </th>
+                        <th scope="col">
+                            Price 
+                            <i class="fas fa-sort sort-icon" onclick="handleSort('price')"></i>
+                        </th>
+                        <th scope="col">Category</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span id="pageInfo">Trang 1</span>
+            <nav>
+                <ul class="pagination mb-0">
+                    <li class="page-item"><button class="page-link" onclick="changePage(-1)">Trước</button></li>
+                    <li class="page-item"><button class="page-link" onclick="changePage(1)">Sau</button></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tạo Sản Phẩm Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createForm">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" id="createTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" class="form-control" id="createPrice" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="createDesc" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category ID (Số)</label>
+                        <input type="number" class="form-control" id="createCategoryId" value="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image URL</label>
+                        <input type="url" class="form-control" id="createImage" placeholder="https://placeimg.com/..." required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="createProduct()">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chi Tiết Sản Phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="detailId">
+                    <div class="text-center mb-3">
+                        <img id="detailImageDisplay" src="" class="img-fluid rounded" style="max-height: 150px;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" id="detailTitle" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" class="form-control" id="detailPrice" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="detailDesc" disabled></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning" id="btnEnableEdit" onclick="enableEditMode()">Sửa (Edit)</button>
+                <button type="button" class="btn btn-primary d-none" id="btnUpdate" onclick="updateProduct()">Cập nhật</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="dashboard.js"></script>
+
+</body>
+</html>
